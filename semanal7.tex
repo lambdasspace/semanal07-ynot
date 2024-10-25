@@ -1,0 +1,246 @@
+\documentclass{article}
+
+\usepackage[margin=2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[parfill]{parskip}
+
+\usepackage{listings}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{minted}
+
+\lstdefinestyle{minilisp}{
+  commentstyle=\color{codegreen},
+  keywordstyle=\color{OrangeRed},
+  basicstyle=\ttfamily,
+  identifierstyle=\color{Cyan}
+}
+
+\lstdefinelanguage{Minilisp}{
+  language=Lisp,
+  morekeywords={lambda,if0}
+}
+
+\lstset{style=minilisp,language=Minilisp,mathescape}
+\lstMakeShortInline[columns=fixed]@
+
+\begin{document}
+  \begin{center}
+    {\Large Evaluación semanal 7}\\
+    {Santiago González Tamariz}\\
+    {\small Lenguajes de Programación}
+  \end{center}
+
+  \begin{enumerate}
+    \item Dada la siguiente expresión en \textbf{MiniLisp}
+      \begin{lstlisting}
+(let (sum (lambda (n) (if0 n 0 (+ n (sum (- n 1))))))
+   (sum 5))
+      \end{lstlisting}
+      \begin{itemize}
+        \item Ejecutarla y explicar el resultado.
+
+          Paso 1:
+          \begin{lstlisting}
+(let (sum (lambda (n) (if0 n 0 (+ n (sum (- n 1))))))
+  (sum 5))
+          \end{lstlisting}
+          $\epsilon = $ \begin{tabular}{|c|c|}
+            @sum@ & $\langle$@n@, @(if0 n 0 (+ n (sum (- n 1))))@, $\epsilon_1\rangle$\\
+            \hline
+          \end{tabular}
+          \hspace{0.5cm} $\epsilon_1 = $ \begin{tabular}{|c|c|}
+             & \\
+            \hline
+          \end{tabular}\\
+          Añadimos la cerradura de @sum@ al ambiente y creamos el subambiente correspondiente
+
+          Paso 2:
+          \begin{lstlisting}
+(sum 5)
+          \end{lstlisting}
+          $\epsilon = $ \begin{tabular}{|c|c|}
+            $\Rightarrow$@sum@ & $\langle$@n@, @(if0 n 0 (+ n (sum (- n 1))))@, $\epsilon_1\rangle$\\
+            \hline
+          \end{tabular}
+          \hspace{0.5cm} $\epsilon_1 = $ \begin{tabular}{|c|c|}
+             @n@ & @5@ \\
+            \hline
+          \end{tabular}\\
+          Es necesario evaluar @sum@ para poder continuar
+
+          Paso 3:
+          \begin{lstlisting}
+(if0 n 0 (+ n (sum (- n 1))))$, \epsilon_1$
+          \end{lstlisting}
+          $\epsilon = $ \begin{tabular}{|c|c|}
+            @sum@ & $\langle$@n@, @(if0 n 0 (+ n (sum (- n 1))))@, $\epsilon_1\rangle$\\
+            \hline
+          \end{tabular}
+          \hspace{0.5cm} $\epsilon_1 = $ \begin{tabular}{|c|c|}
+             $\Rightarrow$@n@ & @5@ \\
+            \hline
+          \end{tabular}\\
+          Es necesario evaluar la condición del @if0@ para continuar
+
+          Paso 4:
+          \begin{lstlisting}
+(if0 5 0 (+ n (sum (- n 1))))$, \epsilon_1$
+          \end{lstlisting}
+          $\epsilon = $ \begin{tabular}{|c|c|}
+            @sum@ & $\langle$@n@, @(if0 n 0 (+ n (sum (- n 1))))@, $\epsilon_1\rangle$\\
+            \hline
+          \end{tabular}
+          \hspace{0.5cm} $\epsilon_1 = $ \begin{tabular}{|c|c|}
+             @n@ & @5@ \\
+            \hline
+          \end{tabular}\\
+          Tomamos el else
+
+          Paso 5:
+          \begin{lstlisting}
+(+ 5 (sum (- n 1)))$, \epsilon_1$
+          \end{lstlisting}
+          $\epsilon = $ \begin{tabular}{|c|c|}
+            @sum@ & $\langle$@n@, @(if0 n 0 (+ n (sum (- n 1))))@, $\epsilon_1\rangle$\\
+            \hline
+          \end{tabular}
+          \hspace{0.5cm} $\epsilon_1 = $ \begin{tabular}{|c|c|}
+             $\Rightarrow$@n@ & @5@ \\
+            \hline
+          \end{tabular}\\
+          Es necesario evaluar la suma, iniciamos por el lado izquierdo
+
+          Paso 6:
+          \begin{lstlisting}
+(+ 5 (sum (- n 1)))$, \epsilon_1$
+> error: variable libre
+          \end{lstlisting}
+          $\epsilon = $ \begin{tabular}{|c|c|}
+            @sum@ & $\langle$@n@, @(if0 n 0 (+ n (sum (- n 1))))@, $\epsilon_1\rangle$\\
+            \hline
+          \end{tabular}
+          \hspace{0.5cm} $\epsilon_1 = $ \begin{tabular}{|c|c|}
+             @n@ & @5@ \\
+            \hline
+          \end{tabular}\\
+          Al buscar @sum@ en el subambiente actual vemos que no está definido por lo que hay un error de variable libre
+
+        \item Modificarla usando el combinador de punto fijo $Y$, volver a ejecutarla y explicar el resultado.
+
+          Recordemos que $Y =_{def} \lambda f.(\lambda x.f(xx))(\lambda x.f(xx))$ y que $(Y \ fun) a = fun \ (Y \ fun) \ a$, tambien hay que añadirle un
+          parámetro extra a nuestra función.
+          $$sum = \lambda f.\lambda n.(if0 \ n \ 0 \ (+ \ n \ (f \ (- \ n \ 1))))$$
+          Entonces aplicando el combinador de punto fijo nos queda
+          $$((Y \ sum) \ 5) = sum \ (Y \ sum) \ 5 = (\lambda f.\lambda n.(if0 \ n \ 0 \ (+ \ n \ (f \ (- \ n \ 1))))) \ (Y \ sum) \ 5$$
+          $$= (\lambda n.(if0 \ n \ 0 \ (+ \ n \ ((Y \ sum) \ (- \ n \ 1))))) \ 5 = (if0 \ 5 \ 0 \ (+ \ 5 \ ((Y \ sum) \ (- \ 5 \ 1))))$$
+          $$= (+ \ 5 \ (sum \ (Y \ sum) \ 4)) = (+ \ 5 \ ((\lambda f.\lambda n.(if0 \ n \ 0 \ (+ \ n \ (f \ (- \ n \ 1))))) \ (Y \ sum) \ 4))$$
+          $$= (+ \ 5 \ (if0 \ 4 \ 0 \ (+ \ 4 \ ((Y \ sum) \ (- \ 4 \ 1))))) = (+ \ 5 \ (+ \ 4 \ (sum \ (Y \ sum) \ 3)))$$
+          $$= (+ \ 5 \ (+ \ 4 \ ((\lambda f.\lambda n.(if0 \ n \ 0 \ (+ \ n \ (f \ (- \ n \ 1))))) \ (Y \ sum) \ 3)))$$
+          $$= (+ \ 5 \ (+ \ 4 \ (if0 \ 3 \ 0 \ (+ \ 3 \ ((Y \ sum) \ (- \ 3 \ 1)))))) = (+ \ 5 \ (+ \ 4 \ (+ \ 3 \ (sum \ (Y \ sum) \ 2))))$$
+          $$= (+ \ 5 \ (+ \ 4 \ (+ \ 3 \ ((\lambda f.\lambda n.(if0 \ n \ 0 \ (+ \ n \ (f \ (- \ n \ 1))))) \ (Y \ sum) \ 2))))$$
+          $$= (+ \ 5 \ (+ \ 4 \ (+ \ 3 \ (if0 \ 2 \ 0 \ (+ \ 2 \ ((Y \ sum) \ (- \ 2 \ 1))))))) = (+ \ 5 \ (+ \ 4 \ (+ \ 3 \ (+ \ 2 \ (sum \ (Y \ sum) \ 1)))))$$
+          $$= (+ \ 5 \ (+ \ 4 \ (+ \ 3 \ (+ \ 2 \ ((\lambda f.\lambda n.(if0 \ n \ 0 \ (+ \ n \ (f \ (- \ n \ 1))))) \ (Y \ sum) \ 1)))))$$
+          $$= (+ \ 5 \ (+ \ 4 \ (+ \ 3 \ (+ \ 2 \ (if0 \ 1 \ 0 \ (+ \ 1 \ ((Y \ sum) \ (- \ 1 \ 1)))))))) = (+ \ 5 \ (+ \ 4 \ (+ \ 3 \ (+ \ 2 \ (+ \ 1 \ (sum \ (Y \ sum) \ 0))))))$$
+          $$= (+ \ 5 \ (+ \ 4 \ (+ \ 3 \ (+ \ 2 \ (+ \ 1 \ ((\lambda f.\lambda n.(if0 \ n \ 0 \ (+ \ n \ (f \ (- \ n \ 1))))) \ (Y \ sum) \ 0))))))$$
+          $$= (+ \ 5 \ (+ \ 4 \ (+ \ 3 \ (+ \ 2 \ (+ \ 1 \ (if0 \ 0 \ 0 \ (+ \ 0 \ ((Y \ sum) \ (- \ 0 \ 1))))))))) = (+ \ 5 \ (+ \ 4 \ (+ \ 3 \ (+ \ 2 \ (+ \ 1 \ 0)))))$$
+          $$= (+ \ 5 \ (+ \ 4 \ (+ \ 3 \ (+ \ 2 \ 1)))) = (+ \ 5 \ (+ \ 4 \ (+ \ 3 \ 3))) = (+ \ 5 \ (+ \ 4 \ 6)) = (+ \ 5 \ 10) = 15$$
+
+      \end{itemize}
+
+    \item Evaluar la siguiente expresión en \textbf{Racket}, explicar su resultado y dar la continuación asociada
+      a evaluar usando la notación $\lambda_\uparrow$.
+      \begin{minted}[style=autumn]{racket}
+> (define c #f)
+> (+ 1 (+ 2 (+ 3 (+ (let/cc k (set! c k) 4) 5))))
+> (c 10)
+      \end{minted}
+
+      Primero se define la variable \texttt{c} como falso, luego tenemos una suma, entonces evaluamos la suma
+      iniciando por lo más anidado la parte izquierda. El \texttt{let/cc} nos devuelve 4, entonces ya podemos hacer la suma.
+      \begin{minted}[style=autumn]{racket}
+> (+ 1 (+ 2 (+ 3 (+ 4 5))))
+> (+ 1 (+ 2 (+ 3 9)))
+> (+ 1 (+ 2 12))
+> (+ 1 14)
+> 15
+      \end{minted}
+
+      También tenemos que guarda la continuación en \texttt{c}
+      $$(\lambda_\uparrow(v) \ (+ \ 1 \ (+ \ 2 \ (+ \ 3 \ (+ \ v \ 5)))))$$
+
+      Entonces al evaluar \texttt{c 10} nos queda
+      \begin{minted}[style=autumn,mathescape,escapeinside=||]{racket}
+> (c 10)
+> ((|$\lambda_\uparrow(v)$| (+ 1 (+ 2 (+ 3 (+ v 5))))) 10)
+> (+ 1 (+ 2 (+ 3 (+ 10 5))))
+> (+ 1 (+ 2 (+ 3 15)))
+> (+ 1 (+ 2 18))
+> (+ 1 20)
+> 21
+      \end{minted}
+
+\clearpage
+    \item Realizar los siguientes ejercicios en \textbf{Haskell}:
+      \begin{itemize}
+        \item Definir la función recurisva \texttt{ocurrenciasElementos} que toma como argumentos dos listas y devuelve una
+          lista de parejas, en donde cada pareja contiene en su parte izquierda un elemento de la segunda lista y
+          en su parte derecha el número de veces que aparece dicho elemento en la primera lista. Por ejemplo:
+          \begin{minted}{haskell}
+> ocurrenciasElementos [1,3,6,2,4,7,3,9,7] [5,2,3]
+[(5,0),(2,1),(3,2)]
+          \end{minted}
+
+          Asumiendo que la segunda lista siempre tendrá un tamaño pequeño, podemos recorrer para cada uno de sus elementos
+          a la primera lista e ir contando cuantas veces aparece. En caso de que la segunda lista tenga un tamaño parecido
+          a la primera lista nos conviene más ordenar las listas e ir checando cuantos elementos contiguos del mismo hay y si
+          cambia entonces pasar a contar las del sigiente elemento.
+
+          \inputminted[style=pastie,fontsize=\small]{haskell}{ej3_1.hs}
+
+        \item Mostrar los registros de activación generados por la función definida en el ejercicio anterior con la llamada
+          \texttt{ocurrenciasElementos [1,2,3] [1,2]}.
+          \begin{minted}[style=pastie,fontsize=\small]{haskell}
+ocurrenciasElementos [1,2,3] [1,2]
+= oe [1,2,3] [1,2]
+= (1, ct 1 [1,2,3]) : oe [1,2,3] [2]
+= (1, 1 + ct 1 [2,3]) : oe [1,2,3] [2]
+= (1, 1 + ct 1 [3]) : oe [1,2,3] [2]
+= (1, 1 + ct 1 []) : oe [1,2,3] [2]
+= (1, 1 + 0) : oe [1,2,3] [2]
+= (1,1) : oe [1,2,3] [2]
+= (1,1) : (2, ct 2 [1,2,3]) : oe [1,2,3] []
+= (1,1) : (2, ct 2 [2,3]) : oe [1,2,3] []
+= (1,1) : (2, 1 + ct 2 [3]) : oe [1,2,3] []
+= (1,1) : (2, 1 + ct 2 []) : oe [1,2,3] []
+= (1,1) : (2, 1 + 0) : oe [1,2,3] []
+= (1,1) : (2, 1) : oe [1,2,3] []
+= (1,1) : (2, 1) : oe [1,2,3]
+= (1,1) : (2, 1) : []
+= [(1,1), (2, 1)]
+          \end{minted}
+
+        \item Optimizar la función definida usando recursión de cola. Deben transformar todas las funciones auxiliares que utilicen.
+          \inputminted[style=pastie,fontsize=\small]{haskell}{ej3_2.hs}
+
+        \item Mostrar los registros de activación generados por la versión de cola con la misma llamada.
+          \begin{minted}[style=pastie,fontsize=\small]{haskell}
+ocurrenciasElementos [1,2,3] [1,2]
+= oe [1,2,3] [1,2] []
+= oe [1,2,3] [2] ([] ++ [(1, ct 1 [1,2,3] 0)])
+= oe [1,2,3] [2] ([] ++ [(1, ct 1 [2,3] 1)])
+= oe [1,2,3] [2] ([] ++ [(1, ct 1 [3] 1)])
+= oe [1,2,3] [2] ([] ++ [(1, ct 1 [] 1)])
+= oe [1,2,3] [2] ([] ++ [(1, 1)])
+= oe [1,2,3] [2] [(1, 1)]
+= oe [1,2,3] [] ([(1, 1)] ++ [(2, ct 2 [1,2,3] 0)])
+= oe [1,2,3] [] ([(1, 1)] ++ [(2, ct 2 [2,3] 0)])
+= oe [1,2,3] [] ([(1, 1)] ++ [(2, ct 2 [3] 1)])
+= oe [1,2,3] [] ([(1, 1)] ++ [(2, ct 2 [] 1)])
+= oe [1,2,3] [] ([(1, 1)] ++ [(2, 1)])
+= oe [1,2,3] [] [(1, 1), (2, 1)]
+= [(1, 1), (2, 1)]
+          \end{minted}
+
+      \end{itemize}
+  \end{enumerate}
+\end{document}
